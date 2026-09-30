@@ -3,5 +3,6 @@
 /.phpunit.cache/
 /.phpunit.result.cache
 /.phpstan.cache/
+/.reasonix/
 /.idea/
 /.vscode/
