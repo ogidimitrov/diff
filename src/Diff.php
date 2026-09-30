@@ -407,75 +407,70 @@ class Diff
         $textInsert = '';
 
         while ($pointer < count($diffs)) {
-            switch ($diffs[$pointer][0]) {
-                case self::INSERT:
-                    $countInsert++;
-                    $textInsert .= $diffs[$pointer][1];
-                    $pointer++;
-                    break;
-
-                case self::DELETE:
-                    $countDelete++;
-                    $textDelete .= $diffs[$pointer][1];
-                    $pointer++;
-                    break;
-
-                case self::EQUAL:
-                    // Reaching an equality is the moment to reconcile the edits
-                    // gathered since the previous one.
-                    if ($countDelete + $countInsert > 1) {
-                        if ($countDelete !== 0 && $countInsert !== 0) {
-                            // Pull a shared prefix out of the insertion and the
-                            // deletion and fold it into the previous equality.
-                            $commonLength = $this->toolkit->commonPrefix($textInsert, $textDelete);
-                            if ($commonLength !== 0) {
-                                $equalIndex = $pointer - $countDelete - $countInsert - 1;
-                                if ($equalIndex >= 0 && $diffs[$equalIndex][0] === self::EQUAL) {
-                                    $diffs[$equalIndex][1] .= Utils::substring($textInsert, 0, $commonLength);
-                                } else {
-                                    array_unshift($diffs, [self::EQUAL, Utils::substring($textInsert, 0, $commonLength)]);
-                                    $pointer++;
-                                }
-                                $textInsert = Utils::substring($textInsert, $commonLength);
-                                $textDelete = Utils::substring($textDelete, $commonLength);
+            if ($diffs[$pointer][0] === self::INSERT) {
+                $countInsert++;
+                $textInsert .= $diffs[$pointer][1];
+                $pointer++;
+            } elseif ($diffs[$pointer][0] === self::DELETE) {
+                $countDelete++;
+                $textDelete .= $diffs[$pointer][1];
+                $pointer++;
+            } elseif ($diffs[$pointer][0] === self::EQUAL) {
+                // Reaching an equality is the moment to reconcile the edits
+                // gathered since the previous one.
+                if ($countDelete + $countInsert > 1) {
+                    if ($countDelete !== 0 && $countInsert !== 0) {
+                        // Pull a shared prefix out of the insertion and the
+                        // deletion and fold it into the previous equality.
+                        $commonLength = $this->toolkit->commonPrefix($textInsert, $textDelete);
+                        if ($commonLength !== 0) {
+                            $equalIndex = $pointer - $countDelete - $countInsert - 1;
+                            if ($equalIndex >= 0 && $diffs[$equalIndex][0] === self::EQUAL) {
+                                $diffs[$equalIndex][1] .= Utils::substring($textInsert, 0, $commonLength);
+                            } else {
+                                array_unshift($diffs, [self::EQUAL, Utils::substring($textInsert, 0, $commonLength)]);
+                                $pointer++;
                             }
-
-                            // Same for a shared suffix.
-                            $commonLength = $this->toolkit->commonSuffix($textInsert, $textDelete);
-                            if ($commonLength !== 0) {
-                                $diffs[$pointer][1] = Utils::substring($textInsert, -$commonLength) . $diffs[$pointer][1];
-                                $textInsert = Utils::substring($textInsert, 0, -$commonLength);
-                                $textDelete = Utils::substring($textDelete, 0, -$commonLength);
-                            }
+                            $textInsert = Utils::substring($textInsert, $commonLength);
+                            $textDelete = Utils::substring($textDelete, $commonLength);
                         }
 
-                        // Delete the offending records and add the merged ones.
-                        // Empty edits are dropped entirely, as Google's original
-                        // does: emitting them leaves degenerate `[DELETE, '']`
-                        // records that block later merging.
-                        $merged = [];
-                        if ($textDelete !== '') {
-                            $merged[] = [self::DELETE, $textDelete];
+                        // Same for a shared suffix.
+                        $commonLength = $this->toolkit->commonSuffix($textInsert, $textDelete);
+                        if ($commonLength !== 0) {
+                            $diffs[$pointer][1] = Utils::substring($textInsert, -$commonLength) . $diffs[$pointer][1];
+                            $textInsert = Utils::substring($textInsert, 0, -$commonLength);
+                            $textDelete = Utils::substring($textDelete, 0, -$commonLength);
                         }
-                        if ($textInsert !== '') {
-                            $merged[] = [self::INSERT, $textInsert];
-                        }
-                        $spliceStart = $pointer - $countDelete - $countInsert;
-                        array_splice($diffs, $spliceStart, $countDelete + $countInsert, $merged);
-                        $pointer = $spliceStart + count($merged) + 1;
-                    } elseif ($pointer !== 0 && $diffs[$pointer - 1][0] === self::EQUAL) {
-                        // Fold this equality into the previous one.
-                        $diffs[$pointer - 1][1] .= $diffs[$pointer][1];
-                        array_splice($diffs, $pointer, 1);
-                    } else {
-                        $pointer++;
                     }
 
-                    $countDelete = 0;
-                    $countInsert = 0;
-                    $textDelete = '';
-                    $textInsert = '';
-                    break;
+                    // Delete the offending records and add the merged ones.
+                    // Empty edits are dropped entirely, as Google's original
+                    // does: emitting them leaves degenerate `[DELETE, '']`
+                    // records that block later merging.
+                    /** @var list<array{0: int, 1: string}> $merged */
+                    $merged = [];
+                    if ($textDelete !== '') {
+                        $merged[] = [self::DELETE, $textDelete];
+                    }
+                    if ($textInsert !== '') {
+                        $merged[] = [self::INSERT, $textInsert];
+                    }
+                    $spliceStart = $pointer - $countDelete - $countInsert;
+                    array_splice($diffs, $spliceStart, $countDelete + $countInsert, $merged);
+                    $pointer = $spliceStart + count($merged) + 1;
+                } elseif ($pointer !== 0 && $diffs[$pointer - 1][0] === self::EQUAL) {
+                    // Fold this equality into the previous one.
+                    $diffs[$pointer - 1][1] .= $diffs[$pointer][1];
+                    array_splice($diffs, $pointer, 1);
+                } else {
+                    $pointer++;
+                }
+
+                $countDelete = 0;
+                $countInsert = 0;
+                $textDelete = '';
+                $textInsert = '';
             }
         }
 
