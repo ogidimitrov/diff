@@ -184,8 +184,8 @@ class Diff
             ];
             if ($text2Length < $text1Length) {
                 // The diff is reversed: the extra text is a deletion.
-                $diffs[0][0] = self::DELETE;
-                $diffs[2][0] = self::DELETE;
+                $diffs[0] = [self::DELETE, $diffs[0][1]];
+                $diffs[2] = [self::DELETE, $diffs[2][1]];
             }
 
             return $diffs;
@@ -426,7 +426,7 @@ class Diff
                         if ($commonLength !== 0) {
                             $equalIndex = $pointer - $countDelete - $countInsert - 1;
                             if ($equalIndex >= 0 && $diffs[$equalIndex][0] === self::EQUAL) {
-                                $diffs[$equalIndex][1] .= Utils::substring($textInsert, 0, $commonLength);
+                                $diffs[$equalIndex] = [self::EQUAL, $diffs[$equalIndex][1] . Utils::substring($textInsert, 0, $commonLength)];
                             } else {
                                 array_unshift($diffs, [self::EQUAL, Utils::substring($textInsert, 0, $commonLength)]);
                                 $pointer++;
@@ -438,7 +438,7 @@ class Diff
                         // Same for a shared suffix.
                         $commonLength = $this->toolkit->commonSuffix($textInsert, $textDelete);
                         if ($commonLength !== 0) {
-                            $diffs[$pointer][1] = Utils::substring($textInsert, -$commonLength) . $diffs[$pointer][1];
+                            $diffs[$pointer] = [self::EQUAL, Utils::substring($textInsert, -$commonLength) . $diffs[$pointer][1]];
                             $textInsert = Utils::substring($textInsert, 0, -$commonLength);
                             $textDelete = Utils::substring($textDelete, 0, -$commonLength);
                         }
@@ -459,9 +459,9 @@ class Diff
                     $spliceStart = $pointer - $countDelete - $countInsert;
                     array_splice($diffs, $spliceStart, $countDelete + $countInsert, $merged);
                     $pointer = $spliceStart + count($merged) + 1;
-                } elseif ($pointer !== 0 && $diffs[$pointer - 1][0] === self::EQUAL) {
+                } elseif ($pointer > 0 && $diffs[$pointer - 1][0] === self::EQUAL) {
                     // Fold this equality into the previous one.
-                    $diffs[$pointer - 1][1] .= $diffs[$pointer][1];
+                    $diffs[$pointer - 1] = [self::EQUAL, $diffs[$pointer - 1][1] . $diffs[$pointer][1]];
                     array_splice($diffs, $pointer, 1);
                 } else {
                     $pointer++;
@@ -491,8 +491,8 @@ class Diff
                 if ($previous === '' || Utils::substring($edit, -$previousLength) === $previous) {
                     // Shift the edit over the previous equality.
                     if ($previous !== '') {
-                        $diffs[$pointer][1] = $previous . Utils::substring($edit, 0, -$previousLength);
-                        $diffs[$pointer + 1][1] = $previous . $diffs[$pointer + 1][1];
+                        $diffs[$pointer] = [$diffs[$pointer][0], $previous . Utils::substring($edit, 0, -$previousLength)];
+                        $diffs[$pointer + 1] = [self::EQUAL, $previous . $diffs[$pointer + 1][1]];
                     }
                     array_splice($diffs, $pointer - 1, 1);
                     $changed = true;
@@ -502,8 +502,8 @@ class Diff
                     if ($next === '' || Utils::substring($edit, 0, $nextLength) === $next) {
                         // Shift the edit over the next equality.
                         if ($next !== '') {
-                            $diffs[$pointer - 1][1] = $previous . $next;
-                            $diffs[$pointer][1] = Utils::substring($edit, $nextLength) . $next;
+                            $diffs[$pointer - 1] = [self::EQUAL, $previous . $next];
+                            $diffs[$pointer] = [$diffs[$pointer][0], Utils::substring($edit, $nextLength) . $next];
                         }
                         array_splice($diffs, $pointer + 1, 1);
                         $changed = true;
@@ -567,16 +567,16 @@ class Diff
 
                 if ($diffs[$pointer - 1][1] !== $bestEquality1) {
                     if ($bestEquality1 !== '') {
-                        $diffs[$pointer - 1][1] = $bestEquality1;
+                        $diffs[$pointer - 1] = [self::EQUAL, $bestEquality1];
                     } else {
                         array_splice($diffs, $pointer - 1, 1);
                         $pointer--;
                     }
 
-                    $diffs[$pointer][1] = $bestEdit;
+                    $diffs[$pointer] = [$diffs[$pointer][0], $bestEdit];
 
                     if ($bestEquality2 !== '') {
-                        $diffs[$pointer + 1][1] = $bestEquality2;
+                        $diffs[$pointer + 1] = [self::EQUAL, $bestEquality2];
                     } else {
                         array_splice($diffs, $pointer + 1, 1);
                         $pointer--;
@@ -673,7 +673,7 @@ class Diff
                     // Duplicate the equality as a deletion ...
                     array_splice($diffs, $equalityIndex, 0, [[self::DELETE, $lastEquality]]);
                     // ... and turn the original into an insertion.
-                    $diffs[$equalityIndex + 1][0] = self::INSERT;
+                    $diffs[$equalityIndex + 1] = [self::INSERT, $diffs[$equalityIndex + 1][1]];
 
                     if ($equalities !== []) {
                         array_pop($equalities);
@@ -712,8 +712,8 @@ class Diff
                         // Note the length is computed explicitly: `-0` would wipe the
                         // whole deletion when the overlap is zero (e.g. an empty insertion).
                         array_splice($diffs, $pointer, 0, [[self::EQUAL, Utils::substring($insertion, 0, $overlap1)]]);
-                        $diffs[$pointer - 1][1] = Utils::substring($deletion, 0, $deletionLength - $overlap1);
-                        $diffs[$pointer + 1][1] = Utils::substring($insertion, $overlap1);
+                        $diffs[$pointer - 1] = [self::DELETE, Utils::substring($deletion, 0, $deletionLength - $overlap1)];
+                        $diffs[$pointer + 1] = [self::INSERT, Utils::substring($insertion, $overlap1)];
                         $pointer++;
                     }
                 } elseif ($overlap2 >= $deletionLength / 2 || $overlap2 >= $insertionLength / 2) {
@@ -780,7 +780,7 @@ class Diff
                 ) {
                     $equalityIndex = (int) array_pop($equalities);
                     array_splice($diffs, $equalityIndex, 0, [[self::DELETE, $lastEquality]]);
-                    $diffs[$equalityIndex + 1][0] = self::INSERT;
+                    $diffs[$equalityIndex + 1] = [self::INSERT, $diffs[$equalityIndex + 1][1]];
                     if ($equalities !== []) {
                         array_pop($equalities);
                     }

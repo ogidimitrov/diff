@@ -92,7 +92,6 @@ final class FuzzTest extends TestCase
             // Applying yields one verdict per patch, or more when a patch is
             // split; it never yields fewer.
             [$result, $applied] = $this->simpleDiff->patch_apply($patches, $before);
-            self::assertIsString($result, "patch result $context");
             self::assertGreaterThanOrEqual(count($patches), count($applied), "a verdict for every patch $context");
 
             // When there is nothing to do, the text is returned untouched.

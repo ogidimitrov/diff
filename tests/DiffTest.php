@@ -304,10 +304,12 @@ final class DiffTest extends TestCase
         self::assertSame($before, $this->simpleDiff->diff_text1($changes));
         self::assertSame($after, $this->simpleDiff->diff_text2($changes));
 
-        $longestEquality = max(array_map(
-            static fn (array $change): int => $change[0] === Diff::EQUAL ? mb_strlen($change[1]) : 0,
-            $changes,
-        ));
+        $longestEquality = 0;
+        foreach ($changes as [$operation, $text]) {
+            if ($operation === Diff::EQUAL) {
+                $longestEquality = max($longestEquality, mb_strlen($text));
+            }
+        }
         self::assertGreaterThanOrEqual(100, $longestEquality);
     }
 

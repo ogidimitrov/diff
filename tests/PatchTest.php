@@ -146,10 +146,10 @@ final class PatchTest extends TestCase
 
         $patches = $this->simpleDiff->patch_make($text1, $text2);
         $before = count($patches);
-        $longest = max(array_map(
-            static fn (PatchObject $patch): int => $patch->getLength1(),
-            $patches,
-        ));
+        $longest = 0;
+        foreach ($patches as $patch) {
+            $longest = max($longest, $patch->getLength1());
+        }
         self::assertGreaterThan(32, $longest, 'the patch should exceed the Bitap limit');
 
         $this->simpleDiff->patch_splitMax($patches);
