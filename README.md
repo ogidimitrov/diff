@@ -1,5 +1,11 @@
 # ogidimitrov/diff
 
+[![CI](https://github.com/ogidimitrov/diff/actions/workflows/ci.yml/badge.svg)](https://github.com/ogidimitrov/diff/actions/workflows/ci.yml)
+[![Latest version](https://img.shields.io/packagist/v/ogidimitrov/diff.svg?label=latest)](https://packagist.org/packages/ogidimitrov/diff)
+[![Downloads](https://img.shields.io/packagist/dt/ogidimitrov/diff.svg?label=downloads)](https://packagist.org/packages/ogidimitrov/diff)
+[![PHP](https://img.shields.io/packagist/php-v/ogidimitrov/diff.svg?label=php)](https://packagist.org/packages/ogidimitrov/diff)
+[![License](https://img.shields.io/packagist/l/ogidimitrov/diff.svg?label=license)](https://github.com/ogidimitrov/diff/blob/main/LICENSE)
+
 Robust diff, match and patch for PHP, in the spirit of Google's
 [Diff Match and Patch](https://github.com/google/diff-match-patch) library.
 
