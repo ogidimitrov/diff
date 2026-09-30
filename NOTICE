@@ -1,0 +1,17 @@
+ogidimitrov/diff
+Copyright (c) 2025 Ognyan Dimitrov
+
+This package is licensed under the MIT License; see the LICENSE file.
+
+It is an independent implementation of the Diff Match and Patch algorithms.
+Those algorithms, the accompanying API and the "Diff Match and Patch" name
+originate from Google's library:
+
+    Diff Match and Patch
+    Copyright 2006 Google Inc.
+    https://github.com/google/diff-match-patch
+    Licensed under the Apache License, Version 2.0.
+
+The class layout takes inspiration from the PHP port by Daniil Skrobov
+(https://github.com/yetanotherape/diff-match-patch); no code from it is
+reproduced here.
